@@ -1,3 +1,13 @@
+export function normalizeCep(value: string): string | null {
+  const trimmed = value.trim();
+
+  if (!/^(?:[0-9]{8}|[0-9]{5}-[0-9]{3})$/.test(trimmed)) {
+    return null;
+  }
+
+  return trimmed.replace('-', '');
+}
+
 export function getShortDate(date: string): string {
   const parsed = new Date(`${date}T12:00:00`);
 

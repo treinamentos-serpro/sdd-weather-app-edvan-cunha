@@ -27,7 +27,7 @@ export default function App() {
             </div>
 
             <div className="w-full max-w-xl">
-              <SearchBar onSearch={search} disabled={status === 'loading'} />
+              <SearchBar onSearch={search} />
             </div>
 
             <UnitToggle unit={unit} onChange={setUnit} />

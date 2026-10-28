@@ -59,7 +59,7 @@ describe('App', () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       return url.includes('geocoding-api')
-        ? jsonResponse({ results: [city] })
+        ? jsonResponse({ results: [{ ...city, country_code: 'BR' }] })
         : jsonResponse(forecast);
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -68,6 +68,8 @@ describe('App', () => {
 
     await user.type(screen.getByRole('searchbox', { name: 'Buscar cidade' }), 'São Paulo');
     await user.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    await user.click(await screen.findByRole('button', { name: /São Paulo/i }));
 
     expect(await screen.findByText('São Paulo')).toBeInTheDocument();
     expect(screen.getByText('22°C')).toBeInTheDocument();
@@ -78,16 +80,23 @@ describe('App', () => {
     expect(screen.getByText('72°F')).toBeInTheDocument();
   });
 
-  it('shows a city selector when multiple localities match the query', async () => {
+  it('resolves a CEP before showing matching localities for explicit selection', async () => {
     const user = userEvent.setup();
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
 
-      if (url.includes('geocoding-api')) {
+      if (url.includes('viacep.com.br')) {
+        return jsonResponse({ localidade: 'São Paulo', uf: 'SP' });
+      }
+
+      if (url.includes('geocoding-api.open-meteo.com')) {
         return jsonResponse({
           results: [
-            { ...city, id: 1, name: 'São Paulo', state: 'São Paulo' },
-            { ...city, id: 2, name: 'Rio de Janeiro', state: 'Rio de Janeiro' },
+            {
+              ...city,
+              admin1: 'São Paulo',
+              country_code: 'BR',
+            },
           ],
         });
       }
@@ -98,12 +107,58 @@ describe('App', () => {
 
     render(<App />);
 
-    await user.type(screen.getByRole('searchbox', { name: 'Buscar cidade' }), 'Brasil');
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar cidade' }), '01001-000');
     await user.click(screen.getByRole('button', { name: 'Buscar' }));
 
     expect(await screen.findByText('Selecione a cidade')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: /Rio de Janeiro/i }));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[0][0])).toBe('https://viacep.com.br/ws/01001000/json/');
+    expect(String(fetchMock.mock.calls[1][0])).not.toContain('01001000');
 
-    expect(await screen.findByRole('heading', { name: 'Rio de Janeiro' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /São Paulo/i }));
+
+    expect(await screen.findByText('22°C')).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('shows a city selector when multiple localities match the query', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.includes('geocoding-api')) {
+        return jsonResponse({
+          results: [
+            {
+              ...city,
+              id: 1,
+              name: 'São Paulo',
+              admin1: 'São Paulo',
+              country_code: 'BR',
+            },
+            {
+              ...city,
+              id: 2,
+              name: 'São Paulo',
+              admin1: 'Rio Grande do Sul',
+              country_code: 'BR',
+            },
+          ],
+        });
+      }
+
+      return jsonResponse(forecast);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar cidade' }), 'São Paulo');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    expect(await screen.findByText('Selecione a cidade')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /São Paulo.*Rio Grande do Sul/i }));
+
+    expect(await screen.findByRole('heading', { name: 'São Paulo' })).toBeInTheDocument();
   });
 });

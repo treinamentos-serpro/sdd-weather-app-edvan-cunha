@@ -22,11 +22,15 @@ que satisfaça os critérios de aceite.
 
 ## Fluxo de trabalho
 
-1. Releia a tarefa e seus critérios de aceite.
+1. Releia a tarefa, seus critérios de aceite e o status registrado no backlog.
 2. Implemente a menor mudança que satisfaça a tarefa.
 3. Trate loading, erro e estado vazio.
 4. Rode o checklist: `pnpm lint`, `pnpm build`, `pnpm test`.
 5. Corrija problemas reportados antes de concluir.
+6. Se todos os critérios foram atendidos e as validações passaram, marque a
+	tarefa como `[x] Concluída` em `tasks/weather-app-tasks.md` na mesma alteração.
+	Caso contrário, mantenha `[ ] Não verificada` e informe os critérios ou
+	validações pendentes.
 
 ## Regras
 

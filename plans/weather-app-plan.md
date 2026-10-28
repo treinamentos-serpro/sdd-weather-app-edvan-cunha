@@ -117,7 +117,11 @@ Descrição em pt-BR e ícone são derivados de `weatherCode` por uma função p
 
 1. A pessoa envia um nome de cidade ou CEP. O formulário remove espaços externos; entrada vazia é rejeitada localmente.
 2. Se a entrada tiver formato de CEP, normalize para oito dígitos e valide antes de qualquer chamada. Consulte o ViaCEP; se não houver cidade/UF, finalize como vazio e não chame o Open-Meteo.
-3. Para CEP resolvido, procure cidade e UF no geocoding da Open-Meteo, restringindo o país ao Brasil e comparando o estado normalizado com a UF. Para nome de cidade, procure diretamente no Brasil.
+3. Para CEP resolvido, procure cidade e UF no geocoding da Open-Meteo,
+   restringindo o país ao Brasil e comparando o estado normalizado com a UF.
+   Para nome de cidade, procure diretamente no Brasil e retenha somente
+   resultados cujo nome corresponda exatamente ao termo após normalização; não
+   apresente candidatos apenas aproximados.
 4. Apresente os resultados com cidade, estado e país. Resultado vazio exibe mensagem apropriada; múltiplos resultados sempre exigem escolha explícita.
 5. Após seleção, consulte o forecast pelas coordenadas do resultado selecionado.
 6. Normalize a resposta para `WeatherData` e atualize o hook com timestamp de sucesso.
@@ -192,7 +196,18 @@ Tratar `erro: true`, cidade/UF ausentes, status HTTP não bem-sucedido, falha de
 }
 ```
 
-Mapear `id`, `name`, `admin1`, `country`, coordenadas e `timezone` para `City`. Para busca por CEP, comparar `admin1` com o nome do estado associado à UF, após normalização de acentos e caixa, e manter somente correspondências brasileiras. Para busca por nome, manter resultados brasileiros e apresentar todas as correspondências relevantes; nunca escolher automaticamente a primeira.
+Mapear `id`, `name`, `admin1`, `country`, coordenadas e `timezone` para
+`City`. Para busca por CEP, comparar `admin1` com o nome do estado associado à
+UF, após normalização de acentos, caixa e espaços, e manter somente
+correspondências brasileiras.
+
+Para busca por nome, normalizar o termo e cada `name` retornado removendo
+diferenças de acentos, caixa e espaços repetidos. Retornar somente nomes
+exatamente iguais após essa normalização; descartar resultados apenas
+aproximados, como nomes que contenham o termo ou compartilhem parte dele. Se
+houver localidades homônimas com correspondência exata, manter todas e
+apresentar estado e país para seleção explícita; nunca escolher automaticamente
+a primeira.
 
 ### Open-Meteo Forecast — clima atual e cinco dias
 
@@ -259,7 +274,12 @@ A conversão Celsius/Fahrenheit é uma função pura aplicada a cada campo de te
 ### Vitest e Testing Library
 
 - Funções puras: validação/normalização do CEP, normalização e correspondência de UF, conversão Celsius/Fahrenheit (incluindo valores negativos e extremos), mapeamento de códigos WMO e formatação pt-BR com fuso da cidade.
-- Services com `fetch` mockado: URLs e parâmetros corretos; mapeamento das respostas; campos ausentes; resposta vazia; status HTTP inválido; falha de rede e timeout. Verificar que CEP não é enviado ao geocoding e não é incluído em mensagens/logs.
+- Services com `fetch` mockado: URLs e parâmetros corretos; mapeamento das
+  respostas; campos ausentes; resposta vazia; status HTTP inválido; falha de
+  rede e timeout. No geocoding por nome, verificar correspondência exata após
+  normalização de acentos, caixa e espaços, descarte de resultados apenas
+  aproximados e preservação de homônimos exatos. Verificar que CEP não é enviado
+  ao geocoding e não é incluído em mensagens/logs.
 - Hook: estados `idle`, `loading`, `success`, `error` e `empty`; retry manual; atualização preservando dados antigos como desatualizados; rejeição de resposta obsoleta; mudança de unidade sem nova consulta.
 - Componentes: busca por nome e CEP, seleção explícita, teclado/labels, loading, erro, vazio e sucesso; indisponibilidade de campos sem ocultar os demais; alternância de todas as temperaturas e preservação de unidades de vento, umidade e precipitação; sinalização e horário de dados antigos.
 

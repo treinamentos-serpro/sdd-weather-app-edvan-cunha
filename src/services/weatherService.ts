@@ -26,12 +26,29 @@ export async function fetchWithTimeout(
   init: RequestInit = {},
   timeoutMs = 10000,
 ): Promise<Response> {
+  return runWithTimeout((signal) => fetch(input, { ...init, signal }), timeoutMs);
+}
+
+async function runWithTimeout<T>(
+  operation: (signal: AbortSignal) => Promise<T>,
+  timeoutMs = 10000,
+): Promise<T> {
   const controller = new AbortController();
-  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = globalThis.setTimeout(() => {
+      controller.abort();
+      reject(new WeatherServiceError('A requisição demorou demais.'));
+    }, timeoutMs);
+  });
 
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    return await Promise.race([operation(controller.signal), timeoutPromise]);
   } catch (error) {
+    if (error instanceof WeatherServiceError) {
+      throw error;
+    }
+
     if (isRecord(error) && error.name === 'AbortError') {
       throw new WeatherServiceError('A requisição demorou demais.');
     }
@@ -42,7 +59,9 @@ export async function fetchWithTimeout(
 
     throw error;
   } finally {
-    globalThis.clearTimeout(timeoutId);
+    if (timeoutId !== undefined) {
+      globalThis.clearTimeout(timeoutId);
+    }
   }
 }
 
@@ -173,32 +192,39 @@ export async function getWeather(city: City): Promise<WeatherData> {
       'temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,precipitation,pressure_msl,weather_code,is_day',
     daily:
       'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum',
+    temperature_unit: 'celsius',
+    wind_speed_unit: 'kmh',
+    precipitation_unit: 'mm',
     timezone: 'auto',
     forecast_days: '5',
   });
-  const response = await fetchWithTimeout(
-    `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
-  );
 
-  if (!response.ok) {
-    throw new WeatherServiceError('Não foi possível carregar o clima.');
-  }
+  return runWithTimeout(async (signal) => {
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?${params.toString()}`,
+      { signal },
+    );
 
-  const payload = await readJson(response, 'Resposta inválida do serviço de clima.');
+    if (!response.ok) {
+      throw new WeatherServiceError('Não foi possível carregar o clima.');
+    }
 
-  if (!isRecord(payload) || !isRecord(payload.current) || !isRecord(payload.daily)) {
-    throw new WeatherServiceError('Resposta incompleta do serviço de clima.');
-  }
+    const payload = await readJson(response, 'Resposta inválida do serviço de clima.');
 
-  const current = mapCurrentWeather(payload.current);
-  const forecast = mapForecast(payload.daily);
-  current.temperatureMaxC = forecast[0].temperatureMaxC;
-  current.temperatureMinC = forecast[0].temperatureMinC;
+    if (!isRecord(payload) || !isRecord(payload.current) || !isRecord(payload.daily)) {
+      throw new WeatherServiceError('Resposta incompleta do serviço de clima.');
+    }
 
-  return {
-    city,
-    current,
-    forecast,
-    fetchedAt: new Date().toISOString(),
-  };
+    const current = mapCurrentWeather(payload.current);
+    const forecast = mapForecast(payload.daily);
+    current.temperatureMaxC = forecast[0].temperatureMaxC;
+    current.temperatureMinC = forecast[0].temperatureMinC;
+
+    return {
+      city,
+      current,
+      forecast,
+      fetchedAt: new Date().toISOString(),
+    };
+  });
 }

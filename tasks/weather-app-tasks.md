@@ -19,6 +19,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 1 — Contratos e funções puras
 
 ### T-01 — Definir os tipos compartilhados de clima
+- **Status:** [x] Concluída
 
 - **Descrição:** Criar os contratos internos de localidade, unidade, clima atual,
   previsão diária e conjunto de dados meteorológicos, conforme o plano.
@@ -36,6 +37,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-05.6.
 
 ### T-02 — Mapear siglas dos estados brasileiros
+- **Status:** [x] Concluída
 
 - **Descrição:** Criar o mapeamento entre siglas UF e nomes de estado usados para
   filtrar resultados do geocoding por CEP.
@@ -49,6 +51,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01; AC-01.2, AC-01.8.
 
 ### T-03 — Validar e normalizar CEP
+- **Status:** [x] Concluída
 
 - **Descrição:** Implementar funções puras para aceitar CEP com ou sem hífen,
   normalizá-lo e rejeitar formatos inválidos antes de qualquer chamada de rede.
@@ -63,6 +66,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.3, AC-01.4, AC-01.7, AC-01.9.
 
 ### T-04 — Converter temperaturas
+- **Status:** [x] Concluída
 
 - **Descrição:** Implementar a conversão pura entre Celsius e Fahrenheit para
   apresentação.
@@ -77,6 +81,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-04; AC-04.1–AC-04.4.
 
 ### T-05 — Mapear códigos meteorológicos
+- **Status:** [x] Concluída
 
 - **Descrição:** Mapear códigos WMO para descrição em pt-BR e representação de
   ícone usada na interface.
@@ -91,6 +96,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-02, FR-03; AC-02.1, AC-02.2, AC-03.2.
 
 ### T-06 — Normalizar localidades e formatar datas
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Implementar normalização textual usada na comparação de UF e
   formatação pt-BR de datas e horários no fuso da localidade.
@@ -109,6 +115,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 2 — Integração com provedores
 
 ### T-07 — Implementar resolução de CEP pelo ViaCEP
+- **Status:** [x] Concluída
 
 - **Descrição:** Consultar o ViaCEP com CEP já validado e normalizado e mapear
   somente cidade e UF para o fluxo interno.
@@ -116,7 +123,8 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   - O serviço não inicia uma requisição para CEP inválido.
   - Trata `erro: true`, cidade/UF ausentes, HTTP não bem-sucedido, falha de rede
     e timeout como falha de resolução.
-  - Usa `AbortController` e timeout de 10 segundos por requisição.
+  - Usa `AbortController` e timeout de 10 segundos por requisição, ativo até a
+    leitura completa do corpo JSON.
   - Não inclui CEP em logs ou mensagens de erro.
 - **Dependências:** T-01, T-03.
 - **Arquivos prováveis:** `src/services/viacepService.ts`.
@@ -124,6 +132,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.2, AC-01.7–AC-01.9, AC-05.5.
 
 ### T-08 — Implementar busca de localidades no Open-Meteo
+- **Status:** [x] Concluída
 
 - **Descrição:** Buscar cidades brasileiras e filtrar resultados de busca por
   CEP pela UF resolvida no ViaCEP.
@@ -131,10 +140,15 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   - A requisição limita a busca ao Brasil e solicita resultados em pt-BR.
   - Resultados são mapeados para `City` com identificador, cidade, estado,
     país, coordenadas e fuso.
+  - Na busca por nome, consulta e nomes retornados são normalizados por acentos,
+    caixa e espaços; somente correspondências exatas são apresentadas.
+    Resultados apenas aproximados são descartados, enquanto homônimos exatos
+    permanecem disponíveis com estado e país para seleção explícita.
   - Busca por CEP compara o estado após normalização e não envia o CEP ao
     Open-Meteo.
   - Resultado vazio, resposta inválida, HTTP, rede e timeout são tratados
-    explicitamente; timeout por requisição é de 10 segundos.
+    explicitamente; timeout por requisição é de 10 segundos e cobre a leitura
+    completa do corpo JSON.
 - **Dependências:** T-01, T-02, T-06.
 - **Arquivos prováveis:** `src/services/geocodingService.ts`.
 - **Tipo:** Data · **Prioridade:** P0 · **Tamanho:** M.
@@ -142,6 +156,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-01.10, AC-05.5, AC-05.8.
 
 ### T-09 — Implementar consulta de clima e previsão
+- **Status:** [x] Concluída
 
 - **Descrição:** Consultar o endpoint forecast e normalizar a resposta para os
   contratos internos.
@@ -154,8 +169,8 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
     ou inválidos como `null`.
   - Resposta estruturalmente inválida ou sem dados utilizáveis resulta em erro
     explícito; não são criados valores fictícios.
-  - Usa timeout de 10 segundos por requisição e registra `fetchedAt` em ISO
-    somente após sucesso.
+  - Usa timeout de 10 segundos por requisição até a leitura completa do corpo
+    JSON e registra `fetchedAt` em ISO somente após sucesso.
 - **Dependências:** T-01.
 - **Arquivos prováveis:** `src/services/weatherService.ts`.
 - **Tipo:** Data · **Prioridade:** P0 · **Tamanho:** M.
@@ -165,6 +180,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 3 — Orquestração do estado
 
 ### T-10 — Orquestrar busca e seleção de localidade
+- **Status:** [x] Concluída
 
 - **Descrição:** Implementar no hook a busca por nome/CEP, estados idle/loading/
   empty/error e seleção explícita dos resultados.
@@ -174,7 +190,8 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   - Busca por nome e CEP preserva todos os resultados relevantes e exige
     seleção explícita; nenhum resultado é selecionado automaticamente.
   - Uma busca recente invalida respostas anteriores usando cancelamento quando
-    possível e controle monotônico de requisição.
+    possível e controle monotônico de requisição; respostas antigas de busca ou
+    clima não podem substituir nem limpar o estado da busca mais recente.
 - **Dependências:** T-03, T-07, T-08.
 - **Arquivos prováveis:** `src/hooks/useWeather.ts`.
 - **Tipo:** Data · **Prioridade:** P0 · **Tamanho:** M.
@@ -182,6 +199,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-05.4, AC-05.8.
 
 ### T-11 — Gerenciar consulta, atualização e dados desatualizados
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Completar o hook com consulta da cidade selecionada, atualização
   manual, unidade em memória e preservação segura de dados anteriores.
@@ -204,18 +222,21 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 4 — Componentes de interface
 
 ### T-12 — Criar formulário de busca
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Criar formulário acessível para busca por nome de cidade ou CEP.
 - **Critérios de aceite:**
   - Campo e botão têm nomes acessíveis e são operáveis por teclado.
   - Envio encaminha o termo ao hook e impede submissão acidental de formulário.
-  - Entrada vazia é comunicada sem expor nem persistir CEP.
+  - Entrada vazia apresenta mensagem acessível associada ao campo, sem chamar
+    serviços externos nem expor ou persistir CEP.
 - **Dependências:** T-10.
 - **Arquivos prováveis:** `src/components/SearchBar.tsx`.
 - **Tipo:** UI · **Prioridade:** P0 · **Tamanho:** P.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.1–AC-01.4, AC-01.9, AC-01.10.
 
 ### T-13 — Exibir resultados de localidades
+- **Status:** [x] Concluída
 
 - **Descrição:** Apresentar opções de geocoding para seleção explícita.
 - **Critérios de aceite:**
@@ -228,6 +249,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01; AC-01.1, AC-01.2, AC-01.5, AC-01.6.
 
 ### T-14 — Exibir condições atuais
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Apresentar valores meteorológicos atuais, condição e extremos
   diários.
@@ -244,11 +266,13 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-02, FR-04; AC-02.1–AC-02.3, AC-04.2, AC-04.3.
 
 ### T-15 — Criar cartão diário de previsão
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Criar apresentação isolada de um dia da previsão.
 - **Critérios de aceite:**
-  - Apresenta condição, mínima/máxima, probabilidade e volume de precipitação
-    quando disponíveis.
+  - Apresenta descrição textual da condição, mínima/máxima, probabilidade e
+    volume de precipitação em mm quando disponíveis; o ícone não substitui a
+    descrição textual.
   - Campos ausentes são marcados como indisponíveis sem esconder valores
     válidos.
   - Data usa o fuso da cidade e formato pt-BR.
@@ -258,6 +282,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-03, FR-04; AC-03.1–AC-03.4, AC-04.2, AC-04.3.
 
 ### T-16 — Exibir lista de previsão
+- **Status:** [x] Concluída
 
 - **Descrição:** Renderizar os dias locais retornados pelo serviço, sem fabricar
   dias ausentes.
@@ -273,6 +298,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-03; AC-03.1, AC-03.3, AC-03.4.
 
 ### T-17 — Criar controle de unidade
+- **Status:** [x] Concluída
 
 - **Descrição:** Criar controle acessível para alternar Celsius/Fahrenheit.
 - **Critérios de aceite:**
@@ -286,13 +312,15 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-04; AC-04.1–AC-04.4.
 
 ### T-18 — Criar ação de atualização manual
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Expor a atualização da cidade selecionada com indicação de
   horário e estado desatualizado.
 - **Critérios de aceite:**
   - A ação solicita atualização manual da cidade ativa e não dispara
     atualização periódica.
-  - Exibe horário da última consulta bem-sucedida e sinalização após 40 minutos.
+  - Exibe `fetchedAt` da última consulta bem-sucedida, não o horário da
+    observação meteorológica, e sinaliza dados após 40 minutos.
   - Falha não apresenta dados antigos como atuais.
 - **Dependências:** T-06, T-11.
 - **Arquivos prováveis:** `src/components/RefreshButton.tsx`.
@@ -300,18 +328,22 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-05, FR-06; AC-05.1–AC-05.3, AC-05.5, AC-05.6.
 
 ### T-19 — Criar estado de carregamento
+- **Status:** [x] Concluída
 
 - **Descrição:** Apresentar carregamento sem bloquear teclado ou ocultar o
   contexto necessário.
 - **Critérios de aceite:**
   - O estado é anunciado semanticamente e pode indicar a etapa em andamento.
-  - Controles necessários continuam utilizáveis por teclado.
+  - O campo e o botão de busca continuam habilitados para permitir uma nova
+    busca durante uma requisição; o carregamento não bloqueia a operação por
+    teclado.
 - **Dependências:** nenhuma.
 - **Arquivos prováveis:** `src/components/states/LoadingState.tsx`.
 - **Tipo:** UI · **Prioridade:** P0 · **Tamanho:** P.
 - **Rastreabilidade:** FR-01, FR-06; AC-05.4.
 
 ### T-20 — Criar estado vazio
+- **Status:** [x] Concluída
 
 - **Descrição:** Apresentar busca sem correspondência e permitir nova busca.
 - **Critérios de aceite:**
@@ -323,6 +355,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.8, AC-05.8.
 
 ### T-21 — Criar estado de erro
+- **Status:** [x] Concluída
 
 - **Descrição:** Apresentar falhas de serviço e ação de nova tentativa manual.
 - **Critérios de aceite:**
@@ -337,6 +370,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 5 — Integração da aplicação
 
 ### T-22 — Integrar fluxo principal da aplicação
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Compor a primeira fatia executável: busca, resultados, seleção,
   clima atual e estados básicos na raiz da aplicação.
@@ -353,6 +387,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-05.4–AC-05.8.
 
 ### T-23 — Completar composição, tema e responsividade
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Integrar previsão, unidade e atualização à aplicação e definir
   o tema dark glassmorphism e o layout responsivo final.
@@ -371,6 +406,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 6 — Testes automatizados e E2E
 
 ### T-24 — Testar validação de CEP e correspondência de UF
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Cobrir funções puras de CEP, normalização textual e mapeamento
   de siglas UF.
@@ -386,6 +422,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.2–AC-01.4, AC-01.8–AC-01.10.
 
 ### T-25 — Testar conversão de temperatura
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Criar testes unitários da conversão Celsius/Fahrenheit.
 - **Critérios de aceite:**
@@ -399,6 +436,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-04; AC-04.1–AC-04.3.
 
 ### T-26 — Testar códigos meteorológicos e formatação
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Criar testes unitários para mapeamento WMO, datas e horário
   local.
@@ -414,6 +452,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-05.2.
 
 ### T-27 — Testar serviço ViaCEP com fetch simulado
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Validar requisição, mapeamento e falhas do ViaCEP sem rede real.
 - **Critérios de aceite:**
@@ -429,6 +468,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-05.5.
 
 ### T-28 — Testar serviço de geocoding
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Validar parâmetros, filtragem de Brasil/UF e respostas do
   geocoding usando `fetch` simulado.
@@ -443,6 +483,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-05.5, AC-05.8.
 
 ### T-29 — Testar serviço meteorológico
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Validar consulta forecast, normalização e falhas usando
   `fetch` simulado.
@@ -451,43 +492,57 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
     para extremos do dia.
   - Testes cobrem campos ausentes, arrays desalinhados e resposta estruturalmente
     inválida.
+  - Testes cobrem previsões válidas com uma a quatro datas e rejeitam ausência
+    ou falta de datas utilizáveis, sem completar a lista artificialmente.
   - Testes cobrem HTTP, falha de rede e timeout sem valores fictícios.
-- **Dependências:** T-09.
+  - Testes verificam que qualquer caminho de serviço mantido cobre a leitura do
+    corpo JSON no timeout de 10 segundos, inclusive quando o corpo demora após
+    os cabeçalhos; caminhos legados removidos não permanecem referenciados em
+    produção.
+- **Dependências:** T-09, T-45, T-46.
 - **Arquivos prováveis:** `tests/services/weatherService.test.ts`.
 - **Tipo:** Test · **Prioridade:** P0 · **Tamanho:** P.
 - **Rastreabilidade:** FR-02, FR-03, FR-05, FR-06; AC-02.1, AC-02.3,
   AC-03.1–AC-03.4, AC-05.1, AC-05.5–AC-05.7.
 
 ### T-30 — Testar estados e concorrência do hook
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Cobrir ciclo de busca, seleção, atualização e unidade no hook.
 - **Critérios de aceite:**
   - Testes cobrem estados idle, loading, success, error e empty.
   - Testes cobrem retry manual, preservação como desatualizado após falha e
     descarte de resposta obsoleta.
+  - Testes distinguem CEP válido/malformado de nome de localidade com algarismos;
+    nomes como `Cidade 2` seguem a busca por nome e CEPs malformados não chamam
+    serviços externos.
   - Testes confirmam que alternar unidade não chama serviços novamente.
-- **Dependências:** T-10, T-11.
+- **Dependências:** T-10, T-11, T-44.
 - **Arquivos prováveis:** `tests/hooks/useWeather.test.ts`.
 - **Tipo:** Test · **Prioridade:** P0 · **Tamanho:** M.
 - **Rastreabilidade:** FR-01, FR-04–FR-06; AC-04.1–AC-04.4,
   AC-05.1–AC-05.8.
 
 ### T-31 — Testar busca e seleção de localidades
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Testar formulário de busca e lista de resultados com serviços
   simulados.
 - **Critérios de aceite:**
-  - Testes cobrem envio por teclado, busca vazia e resultados identificados por
-    cidade/estado/país.
+  - Testes cobrem envio por teclado, mensagem acessível para busca vazia e
+    resultados identificados por cidade/estado/país.
+  - Para busca vazia ou só com espaços, a mensagem é associada ao campo e
+    anunciada por tecnologia assistiva; nenhum serviço externo é chamado.
   - Testes confirmam seleção explícita e ausência de seleção automática.
   - Estados assíncronos relevantes são verificáveis sem depender da rede.
-- **Dependências:** T-12, T-13, T-22.
+- **Dependências:** T-12, T-13, T-22, T-43.
 - **Arquivos prováveis:** `tests/components/SearchBar.test.tsx`,
   `tests/components/CityResults.test.tsx`.
 - **Tipo:** Test · **Prioridade:** P0 · **Tamanho:** P.
 - **Rastreabilidade:** FR-01; AC-01.1–AC-01.6, AC-01.9, AC-01.10.
 
 ### T-32 — Testar apresentação de clima e previsão
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Testar estados de sucesso e dados parciais dos componentes
   meteorológicos.
@@ -504,6 +559,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-04.2, AC-04.3.
 
 ### T-33 — Testar unidade e atualização manual
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Testar controles de unidade e refresh, incluindo horário e
   sinalização de desatualização.
@@ -518,6 +574,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-04–FR-06; AC-04.1–AC-04.4, AC-05.1–AC-05.6.
 
 ### T-34 — Testar estado de carregamento
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Validar o anúncio e a usabilidade do estado loading.
 - **Critérios de aceite:**
@@ -529,6 +586,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-05.4.
 
 ### T-35 — Testar estado vazio
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Validar mensagem de ausência de resultados e possibilidade de
   nova busca.
@@ -541,6 +599,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.8, AC-05.8.
 
 ### T-36 — Testar estado de erro
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Validar mensagem de erro e retry manual.
 - **Critérios de aceite:**
@@ -553,6 +612,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-06; AC-05.5–AC-05.7.
 
 ### T-37 — Testar E2E do fluxo principal
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Validar busca por cidade, seleção, previsão, unidade e
   atualização com respostas de rede controladas.
@@ -567,6 +627,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-03.1, AC-04.1–AC-04.3, AC-05.1–AC-05.3.
 
 ### T-38 — Testar E2E de CEP, vazio e falhas
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Validar os fluxos de CEP e recuperação manual usando respostas
   determinísticas.
@@ -585,6 +646,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 7 — Hardening e validações pendentes
 
 ### T-39 — Validar viewport móvel e acessibilidade
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Verificar responsividade, navegação por teclado e critérios
   automatizados/manuais de acessibilidade.
@@ -602,6 +664,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** NFR-01, NFR-05, NFR-07; FR-01–FR-06.
 
 ### T-40 — Verificar compatibilidade entre navegadores
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Executar smoke tests nos navegadores e versões definidos pela
   spec.
@@ -617,6 +680,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** NFR-06; FR-01–FR-06.
 
 ### T-41 — Medir o alvo de desempenho p95
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Medir o tempo entre envio da busca e renderização bem-sucedida
   após a definição do dispositivo de referência.
@@ -635,6 +699,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** NFR-02.
 
 ### T-42 — Avaliar sucesso de uso em teste de usabilidade
+- **Status:** [ ] Não verificada
 
 - **Descrição:** Avaliar se pelo menos 90% das pessoas participantes conseguem
   buscar uma cidade e consultar o clima sem ajuda, após definição de amostra e
@@ -652,16 +717,118 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Tipo:** Test · **Prioridade:** P2 · **Tamanho:** M.
 - **Rastreabilidade:** NFR-08.
 
+## Entrega 8 — Correções pós-review
+
+### T-43 — Informar erro acessível para busca vazia
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Corrigir o submit vazio para apresentar validação no formulário
+  em vez de retornar silenciosamente.
+- **Critérios de aceite:**
+  - Submeter campo vazio ou somente com espaços por botão ou Enter mostra que o
+    termo é obrigatório.
+  - A mensagem é associada ao campo por semântica acessível e anunciada sem
+    depender somente de mudança visual.
+  - A validação não chama ViaCEP nem Open-Meteo e é limpa ou atualizada quando a
+    entrada passa a ser válida.
+- **Dependências:** T-12.
+- **Arquivos prováveis:** `src/components/SearchBar.tsx`,
+  `tests/unit/SearchBar.test.tsx`.
+- **Tipo:** UI · **Prioridade:** P0 · **Tamanho:** P.
+- **Rastreabilidade:** FR-01, FR-06; AC-01.9.
+
+### T-44 — Distinguir CEP de nome com algarismos
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Substituir a classificação baseada na presença de qualquer
+  dígito por uma regra que reconheça formatos de CEP sem interceptar nomes de
+  localidades que contenham algarismos.
+- **Critérios de aceite:**
+  - CEP válido com ou sem hífen segue para ViaCEP após normalização.
+  - Entradas com formato claramente semelhante a CEP, mas inválidas, são
+    rejeitadas localmente sem chamar serviços externos.
+  - Texto que não tenha formato de CEP, inclusive nome de localidade com
+    algarismos, segue pelo geocoding por nome.
+  - A classificação tem testes para formas válidas, malformadas e nomes com
+    algarismos, sem persistir nem registrar CEP.
+- **Dependências:** T-03, T-10.
+- **Arquivos prováveis:** `src/hooks/useWeather.ts`,
+  `tests/unit/useWeather.test.ts`.
+- **Tipo:** Data · **Prioridade:** P0 · **Tamanho:** P.
+- **Rastreabilidade:** FR-01; AC-01.3, AC-01.4, AC-01.10.
+
+### T-45 — Aceitar previsão diária parcial utilizável
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Preservar uma resposta de forecast com menos de cinco datas
+  válidas sem criar dias ausentes nem descartar os dados utilizáveis.
+- **Critérios de aceite:**
+  - Uma a quatro datas locais válidas são mapeadas na ordem recebida, com campos
+    ausentes representados como `null`.
+  - Arrays não são completados artificialmente; a interface apresenta somente
+    os dias recebidos.
+  - `daily.time` ausente, vazio ou sem datas utilizáveis continua sendo erro
+    explícito da consulta.
+  - Testes cobrem resposta parcial, arrays associados e resposta sem dias
+    utilizáveis.
+- **Dependências:** T-09, T-16.
+- **Arquivos prováveis:** `src/services/weatherService.ts`,
+  `tests/unit/weatherService.test.ts`, testes do componente de previsão.
+- **Tipo:** Data · **Prioridade:** P0 · **Tamanho:** P.
+- **Rastreabilidade:** FR-03, FR-06; AC-03.1–AC-03.4, AC-05.7.
+
+### T-46 — Fechar a lacuna de timeout do caminho legado
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Auditar consumidores de `searchCities`/`fetchWithTimeout` e
+  remover o caminho legado se não houver consumidor de produção; caso seja
+  mantido, cobrir com timeout a requisição e a leitura completa do JSON.
+- **Critérios de aceite:**
+  - A busca de referências identifica e registra se há consumidores de produção
+    antes de remover ou refatorar os exports legados.
+  - Nenhum serviço mantido fica sem timeout de 10 segundos ativo durante a
+    leitura do corpo JSON; o `AbortController` é cancelado no timeout.
+  - Se o caminho for mantido, teste com leitura de corpo atrasada confirma que a
+    operação rejeita no limite e não fica pendurada após os cabeçalhos.
+  - Não são introduzidos retry automático, logs de CEP nem novos hosts de API.
+- **Dependências:** T-08, T-09.
+- **Arquivos prováveis:** `src/services/weatherService.ts`,
+  `tests/unit/weatherService.test.ts`.
+- **Tipo:** Data · **Prioridade:** P1 · **Tamanho:** P.
+- **Rastreabilidade:** FR-06; AC-05.5.
+
+## Rastreabilidade dos achados aceitos no Code Review
+
+| Achado | Tarefas de implementação | Tarefas de teste |
+|---|---|---|
+| 1 — Resolver CEP pelo ViaCEP e não enviar CEP ao Open-Meteo | T-07, T-08, T-10 | T-24, T-27, T-28, T-38 |
+| 2 — Atualizar manualmente e identificar dados desatualizados | T-11, T-18 | T-30, T-33, T-37, T-38 |
+| 3 — Exibir descrição da condição e volume previsto de precipitação | T-15, T-16 | T-32, T-37 |
+| 4 — Exigir seleção explícita da localidade | T-10, T-13, T-22 | T-31, T-37 |
+| 5 — Permitir nova busca durante carregamento e descartar respostas antigas | T-10, T-19, T-22 | T-30, T-31, T-37 |
+| 7 — Manter timeout ativo durante leitura do corpo da resposta | T-07, T-08, T-09 | T-27, T-28, T-29 |
+| 8 — Informar busca vazia com mensagem acessível | T-12 | T-31 |
+| 9 — Informar busca vazia sem chamada externa | T-43 | T-31 |
+| 10 — Não classificar todo nome com algarismos como CEP | T-44 | T-30 |
+| 11 — Preservar previsão parcial sem inventar dias | T-45 | T-29, T-32 |
+| 12 — Cobrir ou remover timeout legado durante leitura do JSON | T-46 | T-29 |
+
+O achado 6, sobre distinguir resposta de geocoding vazia de resposta inválida,
+fica fora desta lista até confirmar o contrato de resposta do Open-Meteo. Se a
+API documentar um payload vazio específico, a implementação e o teste devem
+tratar esse formato como ausência de resultados; outros payloads malformados
+devem continuar sendo erro.
+
 ## Rastreabilidade dos requisitos funcionais
 
 | Requisito | Tarefas que o implementam ou verificam |
 |---|---|
-| FR-01 — Buscar e selecionar localidade | T-01–T-03, T-06–T-08, T-10, T-12–T-13, T-22, T-24, T-27–T-28, T-30–T-31, T-37–T-39 |
+| FR-01 — Buscar e selecionar localidade | T-01–T-03, T-06–T-08, T-10, T-12–T-13, T-22, T-24, T-27–T-28, T-30–T-31, T-37–T-39, T-43–T-44 |
 | FR-02 — Consultar clima atual | T-01, T-05, T-09, T-11, T-14, T-22, T-26, T-29–T-30, T-32, T-37, T-39 |
-| FR-03 — Consultar previsão de cinco dias | T-01, T-05–T-06, T-09, T-11, T-15–T-16, T-23, T-26, T-29–T-30, T-32, T-37, T-39 |
+| FR-03 — Consultar previsão de cinco dias | T-01, T-05–T-06, T-09, T-11, T-15–T-16, T-23, T-26, T-29–T-30, T-32, T-37, T-39, T-45 |
 | FR-04 — Alternar unidade | T-01, T-04, T-11, T-14–T-15, T-17, T-23, T-25, T-30, T-32–T-33, T-37 |
 | FR-05 — Atualizar dados sob demanda | T-06, T-09, T-11, T-18, T-23, T-26, T-29–T-30, T-33, T-37–T-38 |
-| FR-06 — Tratar estados vazios e falhas | T-03, T-07–T-11, T-19–T-23, T-27–T-30, T-34–T-38 |
+| FR-06 — Tratar estados vazios e falhas | T-03, T-07–T-11, T-19–T-23, T-27–T-30, T-34–T-38, T-43, T-45–T-46 |
 
 Todos os requisitos funcionais FR-01–FR-06 têm tarefas de implementação e
 verificação. Os critérios AC-01.1–AC-05.8 estão cobertos pelas tarefas e
@@ -704,6 +871,8 @@ dedicadas de serviço, hook, componentes e E2E.
 3. **Hardening e evidências:** T-39–T-42, após resolver as decisões abertas
    aplicáveis; executar também o teste técnico de cobertura CEP/cidade-UF sem
    inventar critério de cobertura.
+4. **Correções pós-review:** T-43–T-46 e as coberturas correspondentes em
+  T-29–T-31, antes de considerar fechados os achados 9–12.
 
 ## Prompt de implementação para o Coding Agent — T-01
 
