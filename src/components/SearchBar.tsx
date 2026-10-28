@@ -7,6 +7,7 @@ interface SearchBarProps {
 
 export default function SearchBar({ onSearch, disabled = false }: SearchBarProps) {
   const [value, setValue] = useState('');
+  const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -14,11 +15,22 @@ export default function SearchBar({ onSearch, disabled = false }: SearchBarProps
     const trimmedValue = value.replace(/\s+/g, ' ').trim();
 
     if (!trimmedValue) {
+      // AC-01.9: informa que o termo é obrigatório sem chamar serviços externos.
+      setValidationError('Digite uma cidade ou CEP para buscar.');
       return;
     }
 
+    setValidationError(null);
     onSearch(trimmedValue);
     setValue(trimmedValue);
+  };
+
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setValue(event.target.value);
+
+    if (validationError && event.target.value.trim()) {
+      setValidationError(null);
+    }
   };
 
   return (
@@ -38,8 +50,10 @@ export default function SearchBar({ onSearch, disabled = false }: SearchBarProps
           placeholder="Buscar cidade ou CEP"
           aria-label="Buscar cidade"
           aria-busy={disabled}
+          aria-invalid={validationError ? true : undefined}
+          aria-describedby={validationError ? 'city-search-error' : undefined}
           className="w-full bg-transparent text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
-          onChange={(event) => setValue(event.target.value)}
+          onChange={handleChange}
         />
         <button
           type="submit"
@@ -49,6 +63,11 @@ export default function SearchBar({ onSearch, disabled = false }: SearchBarProps
           Buscar
         </button>
       </div>
+      {validationError ? (
+        <p id="city-search-error" role="alert" className="mt-2 text-sm text-rose-300">
+          {validationError}
+        </p>
+      ) : null}
     </form>
   );
 }

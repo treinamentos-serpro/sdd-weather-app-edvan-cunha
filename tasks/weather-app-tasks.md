@@ -199,7 +199,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-05.4, AC-05.8.
 
 ### T-11 — Gerenciar consulta, atualização e dados desatualizados
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Completar o hook com consulta da cidade selecionada, atualização
   manual, unidade em memória e preservação segura de dados anteriores.
@@ -312,7 +312,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-04; AC-04.1–AC-04.4.
 
 ### T-18 — Criar ação de atualização manual
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Expor a atualização da cidade selecionada com indicação de
   horário e estado desatualizado.
@@ -720,7 +720,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 8 — Correções pós-review
 
 ### T-43 — Informar erro acessível para busca vazia
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Corrigir o submit vazio para apresentar validação no formulário
   em vez de retornar silenciosamente.
@@ -797,6 +797,126 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Tipo:** Data · **Prioridade:** P1 · **Tamanho:** P.
 - **Rastreabilidade:** FR-06; AC-05.5.
 
+## Entrega 9 — Correções do review (rodada 2)
+
+Tarefas derivadas da segunda rodada de code review. Os achados dessa rodada que
+já possuem tarefa pendente correspondente não geram tarefa nova; o mapeamento
+completo está em
+[Rastreabilidade dos achados do review — rodada 2](#rastreabilidade-dos-achados-do-review--rodada-2).
+
+### T-47 — Tolerar itens inválidos do geocoding sem falhar a busca
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Alterar o mapeamento de resultados do geocoding para descartar
+  itens individuais inválidos (sem `admin1`, sem `timezone` ou fora do Brasil)
+  em vez de lançar erro que invalida a resposta inteira, como ocorre hoje em
+  `mapCity` de `src/services/geocodingService.ts`.
+- **Critérios de aceite:**
+  - Resposta com mistura de itens válidos e inválidos apresenta somente os
+    válidos, sem erro para a pessoa.
+  - Resposta composta apenas por itens inválidos resulta no estado sem
+    resultados, não em estado de erro.
+  - Payload malformado (não objeto, `results` com tipo inesperado) continua
+    produzindo erro explícito do serviço.
+  - Testes cobrem os três cenários acima.
+- **Dependências:** T-08.
+- **Arquivos prováveis:** `src/services/geocodingService.ts`,
+  `tests/unit/useWeather.test.ts` ou teste dedicado do serviço.
+- **Tipo:** Data · **Prioridade:** P0 · **Tamanho:** P.
+- **Rastreabilidade:** FR-01, FR-06; AC-01.1, AC-01.10, AC-05.8.
+
+### T-48 — Definir e aplicar a política de correspondência por nome
+- **Status:** [ ] Não verificada
+
+- **Descrição:** A busca por nome hoje só retorna igualdade exata do nome
+  normalizado ("Rio" não encontra "Rio de Janeiro"). Decidir a política de
+  correspondência (ex.: prefixo normalizado), registrá-la no plano e aplicá-la
+  em `searchCitiesByName`.
+- **Critérios de aceite:**
+  - A decisão de correspondência é registrada em
+    `plans/weather-app-plan.md` antes da implementação; este backlog não a
+    presume.
+  - Buscar um prefixo válido (ex.: "Rio") apresenta as correspondências com
+    cidade, estado e país para seleção explícita, conforme a política adotada.
+  - A normalização de acentos, caixa e espaços repetidos é preservada e fuzzy
+    matches não relacionados continuam excluídos.
+  - Testes unitários e E2E são atualizados para refletir a política escolhida.
+- **Dependências:** T-08, T-47.
+- **Arquivos prováveis:** `plans/weather-app-plan.md`,
+  `src/services/geocodingService.ts`, `tests/unit/useWeather.test.ts`,
+  `tests/e2e/weather.spec.ts`.
+- **Tipo:** Data · **Prioridade:** P0 · **Tamanho:** M.
+- **Rastreabilidade:** FR-01; AC-01.1, AC-01.5, AC-01.10; NFR-08.
+
+### T-49 — Alinhar mensagens dos estados vazio e de erro na composição
+- **Status:** [x] Concluída
+
+- **Descrição:** A raiz da aplicação renderiza o estado vazio com texto
+  genérico ("Nenhuma cidade encontrada") ignorando a mensagem produzida pelo
+  hook, e o ramo de busca vazia do hook é inalcançável porque o formulário
+  retorna em silêncio. Conectar as mensagens específicas de cada causa à tela.
+- **Critérios de aceite:**
+  - O estado vazio apresenta mensagem correspondente à causa real: sem
+    resultados de busca, CEP inexistente ou termo obrigatório.
+  - Mensagens de erro/vazio produzidas pelo hook não são descartadas pela
+    composição.
+  - Ramos inalcançáveis do hook são removidos ou reconectados em coerência com
+    a validação do formulário (T-43).
+  - O estado vazio permite iniciar nova busca imediatamente.
+- **Dependências:** T-22, T-43.
+- **Arquivos prováveis:** `src/App.tsx`, `src/hooks/useWeather.ts`,
+  `src/components/states/EmptyState.tsx`, `tests/unit/App.test.tsx`.
+- **Tipo:** UI · **Prioridade:** P0 · **Tamanho:** P.
+- **Rastreabilidade:** FR-06; AC-01.8, AC-01.9, AC-05.8.
+
+### T-50 — Remover código morto e unificar a busca de cidades
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Remover artefatos sem consumidor de produção
+  (`src/data/mockWeather.ts`, `getShortDate` e `getDayLabel` em
+  `src/lib/format.ts`, estado `query` exposto sem uso pelo hook e prop
+  `disabled` do formulário se não for adotada) e concluir a unificação da busca
+  de cidades iniciada em T-46, apontando os testes para o serviço único.
+- **Critérios de aceite:**
+  - Nenhum export sem consumidor de produção permanece, salvo justificativa
+    registrada na tarefa.
+  - Existe um único caminho de busca de cidades em produção; os testes passam a
+    exercitar esse caminho.
+  - Nenhuma mudança de comportamento visível é introduzida; lint, build e
+    testes permanecem verdes.
+  - Dados simulados não são importados por código de produção.
+- **Dependências:** T-46.
+- **Arquivos prováveis:** `src/data/mockWeather.ts`, `src/lib/format.ts`,
+  `src/hooks/useWeather.ts`, `src/components/SearchBar.tsx`,
+  `src/services/weatherService.ts`, `tests/unit/weatherService.test.ts`,
+  `tests/unit/format.test.ts`.
+- **Tipo:** Data · **Prioridade:** P1 · **Tamanho:** P.
+- **Rastreabilidade:** FR-01, FR-06 (qualidade interna: elimina caminhos
+  divergentes de busca e formatação).
+
+### T-51 — Refinar a semântica acessível dos controles
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Corrigir detalhes de acessibilidade apontados no review:
+  `aria-label="Buscar cidade"` sobrescreve o rótulo visível "Buscar cidade ou
+  CEP" no campo de busca; o controle de unidade usa `document.getElementById`
+  para foco e mantém os dois botões na ordem de tabulação; a região
+  `aria-live` dos resultados é montada condicionalmente e não anuncia.
+- **Critérios de aceite:**
+  - O campo de busca é anunciado como "Buscar cidade ou CEP", sem `aria-label`
+    conflitante com o rótulo visível.
+  - O controle de unidade gerencia foco com refs e padrão consistente (roving
+    tabindex ou grupo simples), mantendo a operação por setas e por Tab.
+  - A região viva que anuncia os resultados existe antes da atualização de
+    conteúdo, permitindo o anúncio pelos leitores de tela.
+  - Testes cobrem nome acessível do campo e alternância de unidade por teclado.
+- **Dependências:** T-12, T-13, T-17.
+- **Arquivos prováveis:** `src/components/SearchBar.tsx`,
+  `src/components/UnitToggle.tsx`, `src/components/CitySelector.tsx`,
+  `tests/unit/SearchBar.test.tsx`, `tests/unit/UnitToggle.test.tsx`.
+- **Tipo:** UI · **Prioridade:** P1 · **Tamanho:** P.
+- **Rastreabilidade:** NFR-05; AC-01.5.
+
 ## Rastreabilidade dos achados aceitos no Code Review
 
 | Achado | Tarefas de implementação | Tarefas de teste |
@@ -818,6 +938,28 @@ fica fora desta lista até confirmar o contrato de resposta do Open-Meteo. Se a
 API documentar um payload vazio específico, a implementação e o teste devem
 tratar esse formato como ausência de resultados; outros payloads malformados
 devem continuar sendo erro.
+
+## Rastreabilidade dos achados do review — rodada 2
+
+Mapeamento dos achados da segunda rodada de code review. Achados cobertos por
+tarefas já pendentes exigem apenas a verificação dessas tarefas; os demais
+geraram as tarefas T-47 a T-51.
+
+| Achado | Severidade | Tarefas de implementação | Tarefas de teste |
+|---|---|---|---|
+| B1 — FR-05 ausente: atualizar manual, exibir `fetchedAt`, sinalizar >40 min, preservar dados anteriores em falha | Bloqueante | T-11, T-18, T-22 | T-30, T-33, T-37 |
+| B2 — Previsão não exibe volume esperado em mm | Bloqueante | T-15 | T-32 |
+| B3 — Busca vazia sem mensagem; composição descarta mensagem do hook | Bloqueante | T-12, T-43, T-49 | T-31, T-35 |
+| R1 — "Atualizado em" usa hora de observação no fuso errado em vez de `fetchedAt` | Recomendado | T-06, T-18 | T-26, T-33 |
+| R2 — Rótulos "Hoje/Amanhã" comparam com o relógio do dispositivo, não com o fuso da cidade | Recomendado | T-06, T-15 | T-26, T-32 |
+| R3 — Um item inválido do geocoding derruba a busca inteira | Recomendado | T-47 | T-47 |
+| R4 — Filtro de igualdade exata do nome elimina correspondências legítimas | Recomendado | T-48 | T-48 |
+| R5 — Qualquer dígito classifica a entrada como CEP | Recomendado | T-44 | T-30 |
+| R6/N6 — Duplicação de busca de cidades e código morto (`mockWeather`, helpers de formato, `query` sem uso) | Recomendado | T-46, T-50 | T-29 |
+| N1 — Campos ausentes renderizados como "—%" / "— mm" / "— km/h" | Nit | T-14 | T-32 |
+| N2–N4 — `aria-label` conflitante, foco por `getElementById`, `aria-live` condicional | Nit | T-51 | T-39, T-51 |
+| N5 — Previsão com menos de cinco dias falha por completo | Nit | T-45 | T-29, T-32 |
+| Lacunas de teste — AC-05.4 (concorrência), AC-02.3 (campos ausentes na UI), teclado do controle de unidade | Teste | — | T-30, T-32, T-33, T-51 |
 
 ## Rastreabilidade dos requisitos funcionais
 
@@ -873,6 +1015,10 @@ dedicadas de serviço, hook, componentes e E2E.
    inventar critério de cobertura.
 4. **Correções pós-review:** T-43–T-46 e as coberturas correspondentes em
   T-29–T-31, antes de considerar fechados os achados 9–12.
+5. **Correções do review — rodada 2:** T-47–T-49 (bloqueantes e recomendados
+   P0) antes de T-50–T-51; verificar também as tarefas pendentes mapeadas na
+   rastreabilidade da rodada 2 (T-06, T-11, T-14, T-15, T-18, T-22) antes de
+   considerar fechados os achados B1–B3 e R1–R2.
 
 ## Prompt de implementação para o Coding Agent — T-01
 

@@ -66,6 +66,74 @@ describe('useWeather', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 
+  it('refreshes only the weather of the selected city on demand', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ results: [{ ...city, country_code: 'BR' }] }))
+      .mockResolvedValueOnce(jsonResponse(forecast))
+      .mockResolvedValueOnce(jsonResponse(forecast));
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useWeather());
+
+    await act(async () => {
+      await result.current.search('São Paulo');
+    });
+    await act(async () => {
+      await result.current.selectCity(result.current.cities[0]);
+    });
+
+    expect(result.current.status).toBe('success');
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(result.current.status).toBe('success');
+    expect(result.current.data?.city.name).toBe('São Paulo');
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(String(fetchMock.mock.calls[2][0])).toContain('api.open-meteo.com/v1/forecast');
+  });
+
+  it('does not request anything on refresh without a selected city', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useWeather());
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(result.current.status).toBe('idle');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('keeps previous data of the same city when a refresh fails', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ results: [{ ...city, country_code: 'BR' }] }))
+      .mockResolvedValueOnce(jsonResponse(forecast))
+      .mockResolvedValueOnce(jsonResponse({}, false));
+    vi.stubGlobal('fetch', fetchMock);
+    const { result } = renderHook(() => useWeather());
+
+    await act(async () => {
+      await result.current.search('São Paulo');
+    });
+    await act(async () => {
+      await result.current.selectCity(result.current.cities[0]);
+    });
+
+    expect(result.current.status).toBe('success');
+
+    await act(async () => {
+      await result.current.refresh();
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.error).toBe('Não foi possível carregar o clima.');
+    expect(result.current.data?.city.name).toBe('São Paulo');
+  });
+
   it.each([
     '1234567',
     '0100A-000',

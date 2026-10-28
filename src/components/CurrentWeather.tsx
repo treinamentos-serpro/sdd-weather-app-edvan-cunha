@@ -1,27 +1,26 @@
 import type { City, CurrentWeather as CurrentWeatherType, Unit } from '../types/weather';
+import { formatUpdatedAt } from '../lib/format';
 import { formatTemperature } from '../lib/temperature';
 import { getWeatherMeta } from '../lib/weatherCodes';
+import RefreshButton from './RefreshButton';
 
 interface CurrentWeatherProps {
   city: City;
   current: CurrentWeatherType;
   unit: Unit;
+  fetchedAt: string;
+  stale: boolean;
+  onRefresh: () => void;
 }
 
-function formatObservationTime(value: string): string {
-  const parsed = new Date(value);
-
-  if (Number.isNaN(parsed.getTime())) {
-    return 'Hora indisponível';
-  }
-
-  return parsed.toLocaleString('pt-BR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-}
-
-export default function CurrentWeather({ city, current, unit }: CurrentWeatherProps) {
+export default function CurrentWeather({
+  city,
+  current,
+  unit,
+  fetchedAt,
+  stale,
+  onRefresh,
+}: CurrentWeatherProps) {
   const weatherMeta = getWeatherMeta(current.weatherCode);
   const temperatureText = formatTemperature(current.temperatureC, unit);
   const feelsLikeText = formatTemperature(current.apparentTemperatureC, unit);
@@ -36,8 +35,19 @@ export default function CurrentWeather({ city, current, unit }: CurrentWeatherPr
             {city.state || 'Localidade'} · {city.country}
           </p>
         </div>
-        <div className="rounded-full border border-white/10 bg-night-800/60 px-3 py-1 text-xs text-slate-200">
-          Atualizado em {formatObservationTime(current.time)}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full border border-white/10 bg-night-800/60 px-3 py-1 text-xs text-slate-200">
+            Atualizado em {formatUpdatedAt(fetchedAt)}
+          </span>
+          {stale ? (
+            <span
+              role="status"
+              className="rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-xs font-medium text-amber-200"
+            >
+              Dados desatualizados
+            </span>
+          ) : null}
+          <RefreshButton onRefresh={onRefresh} />
         </div>
       </div>
 
