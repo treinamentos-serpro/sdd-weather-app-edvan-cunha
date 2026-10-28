@@ -74,6 +74,6 @@ jobs:
 
       - name: Autodesabilitar este workflow
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.SETUP_TOKEN }}
         run: |
           gh workflow disable "branch-protection.yml"
