@@ -73,6 +73,9 @@ describe('App', () => {
 
     expect(await screen.findByText('São Paulo')).toBeInTheDocument();
     expect(screen.getByText('22°C')).toBeInTheDocument();
+    expect(screen.getByText(/Atualizado em/)).toBeInTheDocument();
+    expect(screen.queryByText('Dados desatualizados')).not.toBeInTheDocument();
+    expect(screen.getByText('Volume 8.1 mm')).toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(2);
 
     await user.click(screen.getByRole('button', { name: 'Selecionar °F' }));
@@ -160,5 +163,46 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /São Paulo.*Rio Grande do Sul/i }));
 
     expect(await screen.findByRole('heading', { name: 'São Paulo' })).toBeInTheDocument();
+  });
+
+  it('announces that a search term is required without calling external services', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Digite uma cidade ou CEP para buscar.');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByText('Pronto para consultar o clima')).toBeInTheDocument();
+  });
+
+  it('refreshes on demand and keeps previous data flagged as stale when the refresh fails', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ results: [{ ...city, country_code: 'BR' }] }))
+      .mockResolvedValueOnce(jsonResponse(forecast))
+      .mockResolvedValueOnce(jsonResponse({}, false));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar cidade' }), 'São Paulo');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+    await user.click(await screen.findByRole('button', { name: /São Paulo/i }));
+
+    expect(await screen.findByText('22°C')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Atualizar' }));
+
+    expect(await screen.findByText('Dados desatualizados')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar o clima');
+    expect(screen.getByText('22°C')).toBeInTheDocument();
+    expect(screen.getByText(/Atualizado em/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Tentar novamente' })).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });

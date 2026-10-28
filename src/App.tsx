@@ -7,14 +7,17 @@ import EmptyState from './components/states/EmptyState';
 import ErrorState from './components/states/ErrorState';
 import LoadingState from './components/states/LoadingState';
 import UnitToggle from './components/UnitToggle';
+import { useNow } from './hooks/useNow';
 import { useWeather } from './hooks/useWeather';
+import { isDataStale } from './lib/staleness';
 import type { Unit } from './types/weather';
 
 export type AppStatus = 'idle' | 'loading' | 'success' | 'error' | 'empty';
 
 export default function App() {
   const [unit, setUnit] = useState<Unit>('celsius');
-  const { status, data, cities, error, search, retry, selectCity } = useWeather();
+  const { status, data, cities, error, search, retry, selectCity, refresh } = useWeather();
+  const now = useNow();
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(109,124,255,0.18),_transparent_30%),_linear-gradient(180deg,_#0b1020_0%,_#111827_100%)] text-white">
@@ -34,7 +37,7 @@ export default function App() {
           </div>
         </header>
 
-        <main className="mt-6">
+        <main className="mt-6 space-y-6">
           {status === 'idle' ? (
             <EmptyState
               title="Pronto para consultar o clima"
@@ -45,16 +48,23 @@ export default function App() {
           {status === 'empty' ? (
             <EmptyState
               title="Nenhuma cidade encontrada"
-              description="Tente outra busca por nome da cidade ou CEP."
+              description={error ?? 'Tente outra busca por nome da cidade ou CEP.'}
             />
           ) : null}
           {status === 'error' ? <ErrorState message={error ?? undefined} onRetry={retry} /> : null}
           {status === 'success' && !data && cities.length > 0 ? (
             <CitySelector cities={cities} onSelectCity={selectCity} />
           ) : null}
-          {status === 'success' && data ? (
+          {(status === 'success' || status === 'error') && data ? (
             <>
-              <CurrentWeather city={data.city} current={data.current} unit={unit} />
+              <CurrentWeather
+                city={data.city}
+                current={data.current}
+                unit={unit}
+                fetchedAt={data.fetchedAt}
+                stale={status === 'error' || isDataStale(data.fetchedAt, now)}
+                onRefresh={refresh}
+              />
               <ForecastList forecast={data.forecast} unit={unit} />
             </>
           ) : null}

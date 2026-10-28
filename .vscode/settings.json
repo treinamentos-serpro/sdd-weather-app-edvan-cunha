@@ -12,5 +12,11 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "files.eol": "\n",
-  "chat.promptFiles": true
+  "chat.promptFiles": true,
+  "chat.tools.terminal.autoApprove": {
+    "/^pnpm lint && pnpm build 2>&1 \\| tail -5$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
 }

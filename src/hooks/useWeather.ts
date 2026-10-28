@@ -19,6 +19,7 @@ interface UseWeatherState {
   query: string;
   search: (name: string) => Promise<void>;
   selectCity: (city: City) => Promise<void>;
+  refresh: () => Promise<void>;
   retry: () => Promise<void>;
 }
 
@@ -43,12 +44,14 @@ export function useWeather(): UseWeatherState {
   const [cities, setCities] = useState<City[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [lastAction, setLastAction] = useState<LastAction | null>(null);
 
   const selectCity = useCallback(async (city: City) => {
     const activeRequestId = ++requestId.current;
     setStatus('loading');
     setError(null);
+    setSelectedCity(city);
     setLastAction({ type: 'select', city });
 
     try {
@@ -69,6 +72,9 @@ export function useWeather(): UseWeatherState {
           ? caughtError.message
           : 'Não foi possível concluir a consulta.';
       setError(message);
+      // AC-05.6: preserva apenas dados anteriores da mesma cidade para exibi-los
+      // como desatualizados; nunca mantém dados de outra localidade.
+      setData((previous) => (previous && previous.city.id === city.id ? previous : null));
       setStatus('error');
     }
   }, []);
@@ -83,6 +89,7 @@ export function useWeather(): UseWeatherState {
       setError('Digite uma cidade ou CEP.');
       setCities([]);
       setData(null);
+      setSelectedCity(null);
       setLastAction(null);
       return;
     }
@@ -91,6 +98,7 @@ export function useWeather(): UseWeatherState {
     setError(null);
     setData(null);
     setCities([]);
+    setSelectedCity(null);
     setLastAction({ type: 'search', query: trimmed });
 
     try {
@@ -151,6 +159,14 @@ export function useWeather(): UseWeatherState {
     }
   }, []);
 
+  const refresh = useCallback(async () => {
+    if (!selectedCity) {
+      return;
+    }
+
+    await selectCity(selectedCity);
+  }, [selectedCity, selectCity]);
+
   const retry = useCallback(async () => {
     if (!lastAction) {
       setStatus('idle');
@@ -175,6 +191,7 @@ export function useWeather(): UseWeatherState {
     query,
     search,
     selectCity,
+    refresh,
     retry,
   };
 }
