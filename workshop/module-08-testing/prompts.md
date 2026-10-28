@@ -27,8 +27,9 @@ dia da semana; getShortDate).
 Gere testes para `src/services/weatherService.ts` usando vi.stubGlobal('fetch',
 ...). Cubra: searchCities com input vazio (não chama fetch), mapeamento de
 results, results ausente (vazio) e resposta não-ok (erro). Para getWeather:
-mapeamento de current+daily para 5 dias, precipitação null → 0, e resposta
-incompleta (current/daily ausentes) lançando WeatherServiceError.
+mapeamento de current+daily para 5 dias, campos de precipitação ausentes
+permanecendo `null`, e resposta incompleta (current/daily ausentes) lançando
+WeatherServiceError.
 ```
 
 ## P8.4 — Testes de componentes

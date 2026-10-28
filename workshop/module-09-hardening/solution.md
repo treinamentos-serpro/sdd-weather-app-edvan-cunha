@@ -25,10 +25,12 @@ O app de referência já incorpora as práticas de hardening. Use como gabarito.
 - **Retry** em [`src/hooks/useWeather.ts`](../../src/hooks/useWeather.ts) refaz a
   última operação (buscar/cidade).
 - Falha de rede vira estado `error` controlado — a UI nunca quebra.
+- Campos meteorológicos diários ausentes permanecem indisponíveis (`null`), sem
+  substituir a ausência por um valor que possa parecer uma previsão real.
 
 ## Respostas parciais
 
-- `precipitation_probability_max[i] ?? 0` evita `null` na tela.
+- Campos opcionais permanecem `null` para a interface indicar indisponibilidade.
 - Ausência de `current`/`daily` → erro de "resposta incompleta" em vez de crash.
 
 ## Edge cases cobertos por teste

@@ -17,7 +17,8 @@ A implementação está no repositório. Use após sua tentativa.
 - **Timeout:** `fetchWithTimeout` usa `AbortController` (10s) e normaliza
   `AbortError` e falhas de rede.
 - **Mapeamento defensivo:** `precipitation_probability_max` pode ser `null` →
-  vira `0`; ausência de `current`/`daily` vira erro de "resposta incompleta".
+  permanece indisponível; ausência de `current`/`daily` ou de cinco datas de
+  previsão vira erro de "resposta incompleta".
 - **Máquina de estados:** `useWeather` expõe `idle | loading | success | error |
   empty` e `retry`, que refaz a última operação (carregar cidade ou re-buscar).
 - **Sem estado duplicado:** a `unit` é estado de UI no `App`; o clima é estado de
@@ -25,14 +26,5 @@ A implementação está no repositório. Use após sua tentativa.
 
 ## Trecho central (mapeamento de forecast)
 
-```ts
-function mapForecast(d) {
-  return d.time.map((date, i) => ({
-    date,
-    weatherCode: d.weather_code[i],
-    max: d.temperature_2m_max[i],
-    min: d.temperature_2m_min[i],
-    precipitationProbability: d.precipitation_probability_max[i] ?? 0,
-  }));
-}
-```
+Campos meteorológicos diários ausentes permanecem `null`; somente as cinco
+datas locais precisam estar presentes para a previsão ser considerada completa.
