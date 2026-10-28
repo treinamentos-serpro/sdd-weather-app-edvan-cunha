@@ -77,4 +77,33 @@ describe('App', () => {
 
     expect(screen.getByText('72°F')).toBeInTheDocument();
   });
+
+  it('shows a city selector when multiple localities match the query', async () => {
+    const user = userEvent.setup();
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.includes('geocoding-api')) {
+        return jsonResponse({
+          results: [
+            { ...city, id: 1, name: 'São Paulo', state: 'São Paulo' },
+            { ...city, id: 2, name: 'Rio de Janeiro', state: 'Rio de Janeiro' },
+          ],
+        });
+      }
+
+      return jsonResponse(forecast);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<App />);
+
+    await user.type(screen.getByRole('searchbox', { name: 'Buscar cidade' }), 'Brasil');
+    await user.click(screen.getByRole('button', { name: 'Buscar' }));
+
+    expect(await screen.findByText('Selecione a cidade')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /Rio de Janeiro/i }));
+
+    expect(await screen.findByRole('heading', { name: 'Rio de Janeiro' })).toBeInTheDocument();
+  });
 });

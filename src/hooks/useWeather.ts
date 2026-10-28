@@ -21,6 +21,10 @@ interface LastAction {
   query?: string;
 }
 
+function normalizeQuery(value: string): string {
+  return value.replace(/\s+/g, ' ').trim();
+}
+
 export function useWeather(): UseWeatherState {
   const [status, setStatus] = useState<WeatherStatus>('idle');
   const [data, setData] = useState<WeatherData | null>(null);
@@ -50,7 +54,7 @@ export function useWeather(): UseWeatherState {
 
   const search = useCallback(
     async (name: string) => {
-      const trimmed = name.trim();
+      const trimmed = normalizeQuery(name);
       setQuery(trimmed);
 
       if (!trimmed) {
@@ -78,8 +82,13 @@ export function useWeather(): UseWeatherState {
           return;
         }
 
-        const [firstCity] = results;
-        await selectCity(firstCity);
+        if (results.length === 1) {
+          await selectCity(results[0]);
+          return;
+        }
+
+        setStatus('success');
+        setData(null);
       } catch (caughtError) {
         const message =
           caughtError instanceof WeatherServiceError

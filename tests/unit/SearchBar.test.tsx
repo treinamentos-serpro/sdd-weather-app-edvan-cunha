@@ -26,4 +26,17 @@ describe('SearchBar', () => {
 
     expect(onSearch).toHaveBeenCalledWith('São Paulo');
   });
+
+  it('normalizes repeated spaces before submitting special-character searches', async () => {
+    const user = userEvent.setup();
+    const onSearch = vi.fn();
+
+    render(<SearchBar onSearch={onSearch} />);
+    const input = screen.getByLabelText(/buscar cidade/i);
+
+    await user.type(input, '  São   Paulo &  região  ');
+    await user.keyboard('{Enter}');
+
+    expect(onSearch).toHaveBeenCalledWith('São Paulo & região');
+  });
 });

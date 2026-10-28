@@ -11,7 +11,7 @@ export default function SearchBar({ onSearch, disabled = false }: SearchBarProps
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const trimmedValue = value.trim();
+    const trimmedValue = value.replace(/\s+/g, ' ').trim();
 
     if (!trimmedValue) {
       return;
@@ -22,9 +22,9 @@ export default function SearchBar({ onSearch, disabled = false }: SearchBarProps
   };
 
   return (
-    <form role="search" onSubmit={handleSubmit} className="w-full">
+    <form role="search" aria-busy={disabled} onSubmit={handleSubmit} className="w-full">
       <label htmlFor="city-search" className="sr-only">
-        Buscar cidade
+        Buscar cidade ou CEP
       </label>
       <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 backdrop-blur-md shadow-glass transition focus-within:border-accent-400/70 focus-within:ring-2 focus-within:ring-accent-400/30">
         <span aria-hidden="true" className="text-lg text-sun">
@@ -37,7 +37,8 @@ export default function SearchBar({ onSearch, disabled = false }: SearchBarProps
           disabled={disabled}
           placeholder="Buscar cidade ou CEP"
           aria-label="Buscar cidade"
-          className="w-full bg-transparent text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none"
+          aria-busy={disabled}
+          className="w-full bg-transparent text-sm text-slate-100 placeholder:text-slate-400 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70"
           onChange={(event) => setValue(event.target.value)}
         />
         <button

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import CitySelector from './components/CitySelector';
 import CurrentWeather from './components/CurrentWeather';
 import ForecastList from './components/ForecastList';
 import SearchBar from './components/SearchBar';
@@ -13,7 +14,7 @@ export type AppStatus = 'idle' | 'loading' | 'success' | 'error' | 'empty';
 
 export default function App() {
   const [unit, setUnit] = useState<Unit>('celsius');
-  const { status, data, error, search, retry } = useWeather();
+  const { status, data, cities, error, search, retry, selectCity } = useWeather();
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(109,124,255,0.18),_transparent_30%),_linear-gradient(180deg,_#0b1020_0%,_#111827_100%)] text-white">
@@ -48,6 +49,9 @@ export default function App() {
             />
           ) : null}
           {status === 'error' ? <ErrorState message={error ?? undefined} onRetry={retry} /> : null}
+          {status === 'success' && !data && cities.length > 0 ? (
+            <CitySelector cities={cities} onSelectCity={selectCity} />
+          ) : null}
           {status === 'success' && data ? (
             <>
               <CurrentWeather city={data.city} current={data.current} unit={unit} />
