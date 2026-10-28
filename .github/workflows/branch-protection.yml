@@ -76,4 +76,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.SETUP_TOKEN }}
         run: |
-          gh workflow disable "branch-protection.yml"
+          gh workflow disable "branch-protection.yml" --repo "$GITHUB_REPOSITORY"
