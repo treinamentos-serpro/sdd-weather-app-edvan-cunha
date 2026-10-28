@@ -492,11 +492,14 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
     para extremos do dia.
   - Testes cobrem campos ausentes, arrays desalinhados e resposta estruturalmente
     inválida.
+  - Testes cobrem previsões válidas com uma a quatro datas e rejeitam ausência
+    ou falta de datas utilizáveis, sem completar a lista artificialmente.
   - Testes cobrem HTTP, falha de rede e timeout sem valores fictícios.
-  - O teste de timeout verifica que a leitura do corpo JSON também está coberta
-    pelo limite de 10 segundos, inclusive quando o corpo demora após os
-    cabeçalhos.
-- **Dependências:** T-09.
+  - Testes verificam que qualquer caminho de serviço mantido cobre a leitura do
+    corpo JSON no timeout de 10 segundos, inclusive quando o corpo demora após
+    os cabeçalhos; caminhos legados removidos não permanecem referenciados em
+    produção.
+- **Dependências:** T-09, T-45, T-46.
 - **Arquivos prováveis:** `tests/services/weatherService.test.ts`.
 - **Tipo:** Test · **Prioridade:** P0 · **Tamanho:** P.
 - **Rastreabilidade:** FR-02, FR-03, FR-05, FR-06; AC-02.1, AC-02.3,
@@ -510,8 +513,11 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   - Testes cobrem estados idle, loading, success, error e empty.
   - Testes cobrem retry manual, preservação como desatualizado após falha e
     descarte de resposta obsoleta.
+  - Testes distinguem CEP válido/malformado de nome de localidade com algarismos;
+    nomes como `Cidade 2` seguem a busca por nome e CEPs malformados não chamam
+    serviços externos.
   - Testes confirmam que alternar unidade não chama serviços novamente.
-- **Dependências:** T-10, T-11.
+- **Dependências:** T-10, T-11, T-44.
 - **Arquivos prováveis:** `tests/hooks/useWeather.test.ts`.
 - **Tipo:** Test · **Prioridade:** P0 · **Tamanho:** M.
 - **Rastreabilidade:** FR-01, FR-04–FR-06; AC-04.1–AC-04.4,
@@ -525,9 +531,11 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Critérios de aceite:**
   - Testes cobrem envio por teclado, mensagem acessível para busca vazia e
     resultados identificados por cidade/estado/país.
+  - Para busca vazia ou só com espaços, a mensagem é associada ao campo e
+    anunciada por tecnologia assistiva; nenhum serviço externo é chamado.
   - Testes confirmam seleção explícita e ausência de seleção automática.
   - Estados assíncronos relevantes são verificáveis sem depender da rede.
-- **Dependências:** T-12, T-13, T-22.
+- **Dependências:** T-12, T-13, T-22, T-43.
 - **Arquivos prováveis:** `tests/components/SearchBar.test.tsx`,
   `tests/components/CityResults.test.tsx`.
 - **Tipo:** Test · **Prioridade:** P0 · **Tamanho:** P.
@@ -709,6 +717,86 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Tipo:** Test · **Prioridade:** P2 · **Tamanho:** M.
 - **Rastreabilidade:** NFR-08.
 
+## Entrega 8 — Correções pós-review
+
+### T-43 — Informar erro acessível para busca vazia
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Corrigir o submit vazio para apresentar validação no formulário
+  em vez de retornar silenciosamente.
+- **Critérios de aceite:**
+  - Submeter campo vazio ou somente com espaços por botão ou Enter mostra que o
+    termo é obrigatório.
+  - A mensagem é associada ao campo por semântica acessível e anunciada sem
+    depender somente de mudança visual.
+  - A validação não chama ViaCEP nem Open-Meteo e é limpa ou atualizada quando a
+    entrada passa a ser válida.
+- **Dependências:** T-12.
+- **Arquivos prováveis:** `src/components/SearchBar.tsx`,
+  `tests/unit/SearchBar.test.tsx`.
+- **Tipo:** UI · **Prioridade:** P0 · **Tamanho:** P.
+- **Rastreabilidade:** FR-01, FR-06; AC-01.9.
+
+### T-44 — Distinguir CEP de nome com algarismos
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Substituir a classificação baseada na presença de qualquer
+  dígito por uma regra que reconheça formatos de CEP sem interceptar nomes de
+  localidades que contenham algarismos.
+- **Critérios de aceite:**
+  - CEP válido com ou sem hífen segue para ViaCEP após normalização.
+  - Entradas com formato claramente semelhante a CEP, mas inválidas, são
+    rejeitadas localmente sem chamar serviços externos.
+  - Texto que não tenha formato de CEP, inclusive nome de localidade com
+    algarismos, segue pelo geocoding por nome.
+  - A classificação tem testes para formas válidas, malformadas e nomes com
+    algarismos, sem persistir nem registrar CEP.
+- **Dependências:** T-03, T-10.
+- **Arquivos prováveis:** `src/hooks/useWeather.ts`,
+  `tests/unit/useWeather.test.ts`.
+- **Tipo:** Data · **Prioridade:** P0 · **Tamanho:** P.
+- **Rastreabilidade:** FR-01; AC-01.3, AC-01.4, AC-01.10.
+
+### T-45 — Aceitar previsão diária parcial utilizável
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Preservar uma resposta de forecast com menos de cinco datas
+  válidas sem criar dias ausentes nem descartar os dados utilizáveis.
+- **Critérios de aceite:**
+  - Uma a quatro datas locais válidas são mapeadas na ordem recebida, com campos
+    ausentes representados como `null`.
+  - Arrays não são completados artificialmente; a interface apresenta somente
+    os dias recebidos.
+  - `daily.time` ausente, vazio ou sem datas utilizáveis continua sendo erro
+    explícito da consulta.
+  - Testes cobrem resposta parcial, arrays associados e resposta sem dias
+    utilizáveis.
+- **Dependências:** T-09, T-16.
+- **Arquivos prováveis:** `src/services/weatherService.ts`,
+  `tests/unit/weatherService.test.ts`, testes do componente de previsão.
+- **Tipo:** Data · **Prioridade:** P0 · **Tamanho:** P.
+- **Rastreabilidade:** FR-03, FR-06; AC-03.1–AC-03.4, AC-05.7.
+
+### T-46 — Fechar a lacuna de timeout do caminho legado
+- **Status:** [ ] Não verificada
+
+- **Descrição:** Auditar consumidores de `searchCities`/`fetchWithTimeout` e
+  remover o caminho legado se não houver consumidor de produção; caso seja
+  mantido, cobrir com timeout a requisição e a leitura completa do JSON.
+- **Critérios de aceite:**
+  - A busca de referências identifica e registra se há consumidores de produção
+    antes de remover ou refatorar os exports legados.
+  - Nenhum serviço mantido fica sem timeout de 10 segundos ativo durante a
+    leitura do corpo JSON; o `AbortController` é cancelado no timeout.
+  - Se o caminho for mantido, teste com leitura de corpo atrasada confirma que a
+    operação rejeita no limite e não fica pendurada após os cabeçalhos.
+  - Não são introduzidos retry automático, logs de CEP nem novos hosts de API.
+- **Dependências:** T-08, T-09.
+- **Arquivos prováveis:** `src/services/weatherService.ts`,
+  `tests/unit/weatherService.test.ts`.
+- **Tipo:** Data · **Prioridade:** P1 · **Tamanho:** P.
+- **Rastreabilidade:** FR-06; AC-05.5.
+
 ## Rastreabilidade dos achados aceitos no Code Review
 
 | Achado | Tarefas de implementação | Tarefas de teste |
@@ -720,6 +808,10 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 | 5 — Permitir nova busca durante carregamento e descartar respostas antigas | T-10, T-19, T-22 | T-30, T-31, T-37 |
 | 7 — Manter timeout ativo durante leitura do corpo da resposta | T-07, T-08, T-09 | T-27, T-28, T-29 |
 | 8 — Informar busca vazia com mensagem acessível | T-12 | T-31 |
+| 9 — Informar busca vazia sem chamada externa | T-43 | T-31 |
+| 10 — Não classificar todo nome com algarismos como CEP | T-44 | T-30 |
+| 11 — Preservar previsão parcial sem inventar dias | T-45 | T-29, T-32 |
+| 12 — Cobrir ou remover timeout legado durante leitura do JSON | T-46 | T-29 |
 
 O achado 6, sobre distinguir resposta de geocoding vazia de resposta inválida,
 fica fora desta lista até confirmar o contrato de resposta do Open-Meteo. Se a
@@ -731,12 +823,12 @@ devem continuar sendo erro.
 
 | Requisito | Tarefas que o implementam ou verificam |
 |---|---|
-| FR-01 — Buscar e selecionar localidade | T-01–T-03, T-06–T-08, T-10, T-12–T-13, T-22, T-24, T-27–T-28, T-30–T-31, T-37–T-39 |
+| FR-01 — Buscar e selecionar localidade | T-01–T-03, T-06–T-08, T-10, T-12–T-13, T-22, T-24, T-27–T-28, T-30–T-31, T-37–T-39, T-43–T-44 |
 | FR-02 — Consultar clima atual | T-01, T-05, T-09, T-11, T-14, T-22, T-26, T-29–T-30, T-32, T-37, T-39 |
-| FR-03 — Consultar previsão de cinco dias | T-01, T-05–T-06, T-09, T-11, T-15–T-16, T-23, T-26, T-29–T-30, T-32, T-37, T-39 |
+| FR-03 — Consultar previsão de cinco dias | T-01, T-05–T-06, T-09, T-11, T-15–T-16, T-23, T-26, T-29–T-30, T-32, T-37, T-39, T-45 |
 | FR-04 — Alternar unidade | T-01, T-04, T-11, T-14–T-15, T-17, T-23, T-25, T-30, T-32–T-33, T-37 |
 | FR-05 — Atualizar dados sob demanda | T-06, T-09, T-11, T-18, T-23, T-26, T-29–T-30, T-33, T-37–T-38 |
-| FR-06 — Tratar estados vazios e falhas | T-03, T-07–T-11, T-19–T-23, T-27–T-30, T-34–T-38 |
+| FR-06 — Tratar estados vazios e falhas | T-03, T-07–T-11, T-19–T-23, T-27–T-30, T-34–T-38, T-43, T-45–T-46 |
 
 Todos os requisitos funcionais FR-01–FR-06 têm tarefas de implementação e
 verificação. Os critérios AC-01.1–AC-05.8 estão cobertos pelas tarefas e
@@ -779,6 +871,8 @@ dedicadas de serviço, hook, componentes e E2E.
 3. **Hardening e evidências:** T-39–T-42, após resolver as decisões abertas
    aplicáveis; executar também o teste técnico de cobertura CEP/cidade-UF sem
    inventar critério de cobertura.
+4. **Correções pós-review:** T-43–T-46 e as coberturas correspondentes em
+  T-29–T-31, antes de considerar fechados os achados 9–12.
 
 ## Prompt de implementação para o Coding Agent — T-01
 
