@@ -19,7 +19,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 1 — Contratos e funções puras
 
 ### T-01 — Definir os tipos compartilhados de clima
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Criar os contratos internos de localidade, unidade, clima atual,
   previsão diária e conjunto de dados meteorológicos, conforme o plano.
@@ -37,7 +37,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-05.6.
 
 ### T-02 — Mapear siglas dos estados brasileiros
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Criar o mapeamento entre siglas UF e nomes de estado usados para
   filtrar resultados do geocoding por CEP.
@@ -66,7 +66,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.3, AC-01.4, AC-01.7, AC-01.9.
 
 ### T-04 — Converter temperaturas
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Implementar a conversão pura entre Celsius e Fahrenheit para
   apresentação.
@@ -81,7 +81,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-04; AC-04.1–AC-04.4.
 
 ### T-05 — Mapear códigos meteorológicos
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Mapear códigos WMO para descrição em pt-BR e representação de
   ícone usada na interface.
@@ -115,7 +115,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 2 — Integração com provedores
 
 ### T-07 — Implementar resolução de CEP pelo ViaCEP
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Consultar o ViaCEP com CEP já validado e normalizado e mapear
   somente cidade e UF para o fluxo interno.
@@ -132,7 +132,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.2, AC-01.7–AC-01.9, AC-05.5.
 
 ### T-08 — Implementar busca de localidades no Open-Meteo
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Buscar cidades brasileiras e filtrar resultados de busca por
   CEP pela UF resolvida no ViaCEP.
@@ -140,6 +140,10 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   - A requisição limita a busca ao Brasil e solicita resultados em pt-BR.
   - Resultados são mapeados para `City` com identificador, cidade, estado,
     país, coordenadas e fuso.
+  - Na busca por nome, consulta e nomes retornados são normalizados por acentos,
+    caixa e espaços; somente correspondências exatas são apresentadas.
+    Resultados apenas aproximados são descartados, enquanto homônimos exatos
+    permanecem disponíveis com estado e país para seleção explícita.
   - Busca por CEP compara o estado após normalização e não envia o CEP ao
     Open-Meteo.
   - Resultado vazio, resposta inválida, HTTP, rede e timeout são tratados
@@ -152,7 +156,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
   AC-01.10, AC-05.5, AC-05.8.
 
 ### T-09 — Implementar consulta de clima e previsão
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Consultar o endpoint forecast e normalizar a resposta para os
   contratos internos.
@@ -176,7 +180,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 ## Entrega 3 — Orquestração do estado
 
 ### T-10 — Orquestrar busca e seleção de localidade
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Implementar no hook a busca por nome/CEP, estados idle/loading/
   empty/error e seleção explícita dos resultados.
@@ -232,7 +236,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.1–AC-01.4, AC-01.9, AC-01.10.
 
 ### T-13 — Exibir resultados de localidades
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Apresentar opções de geocoding para seleção explícita.
 - **Critérios de aceite:**
@@ -278,7 +282,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-03, FR-04; AC-03.1–AC-03.4, AC-04.2, AC-04.3.
 
 ### T-16 — Exibir lista de previsão
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Renderizar os dias locais retornados pelo serviço, sem fabricar
   dias ausentes.
@@ -294,7 +298,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-03; AC-03.1, AC-03.3, AC-03.4.
 
 ### T-17 — Criar controle de unidade
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Criar controle acessível para alternar Celsius/Fahrenheit.
 - **Critérios de aceite:**
@@ -324,7 +328,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-05, FR-06; AC-05.1–AC-05.3, AC-05.5, AC-05.6.
 
 ### T-19 — Criar estado de carregamento
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Apresentar carregamento sem bloquear teclado ou ocultar o
   contexto necessário.
@@ -339,7 +343,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-05.4.
 
 ### T-20 — Criar estado vazio
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Apresentar busca sem correspondência e permitir nova busca.
 - **Critérios de aceite:**
@@ -351,7 +355,7 @@ verdade para escopo e aceite; este backlog organiza sua implementação.
 - **Rastreabilidade:** FR-01, FR-06; AC-01.8, AC-05.8.
 
 ### T-21 — Criar estado de erro
-- **Status:** [ ] Não verificada
+- **Status:** [x] Concluída
 
 - **Descrição:** Apresentar falhas de serviço e ação de nova tentativa manual.
 - **Critérios de aceite:**

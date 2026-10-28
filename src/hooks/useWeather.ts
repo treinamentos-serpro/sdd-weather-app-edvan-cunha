@@ -1,5 +1,12 @@
-import { useCallback, useState } from 'react';
-import { getWeather, searchCities, WeatherServiceError } from '../services/weatherService';
+import { useCallback, useRef, useState } from 'react';
+import { normalizeCep } from '../lib/format';
+import {
+  GeocodingServiceError,
+  searchCitiesByCep,
+  searchCitiesByName,
+} from '../services/geocodingService';
+import { resolveCep, ViaCepServiceError } from '../services/viacepService';
+import { getWeather, WeatherServiceError } from '../services/weatherService';
 import type { City, WeatherData } from '../types/weather';
 
 export type WeatherStatus = 'idle' | 'loading' | 'success' | 'error' | 'empty';
@@ -25,7 +32,12 @@ function normalizeQuery(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }
 
+function isCepQuery(value: string): boolean {
+  return /\d/.test(value);
+}
+
 export function useWeather(): UseWeatherState {
+  const requestId = useRef(0);
   const [status, setStatus] = useState<WeatherStatus>('idle');
   const [data, setData] = useState<WeatherData | null>(null);
   const [cities, setCities] = useState<City[]>([]);
@@ -34,15 +46,24 @@ export function useWeather(): UseWeatherState {
   const [lastAction, setLastAction] = useState<LastAction | null>(null);
 
   const selectCity = useCallback(async (city: City) => {
+    const activeRequestId = ++requestId.current;
     setStatus('loading');
     setError(null);
     setLastAction({ type: 'select', city });
 
     try {
       const weather = await getWeather(city);
+      if (activeRequestId !== requestId.current) {
+        return;
+      }
+
       setData(weather);
       setStatus('success');
     } catch (caughtError) {
+      if (activeRequestId !== requestId.current) {
+        return;
+      }
+
       const message =
         caughtError instanceof WeatherServiceError
           ? caughtError.message
@@ -52,54 +73,83 @@ export function useWeather(): UseWeatherState {
     }
   }, []);
 
-  const search = useCallback(
-    async (name: string) => {
-      const trimmed = normalizeQuery(name);
-      setQuery(trimmed);
+  const search = useCallback(async (name: string) => {
+    const trimmed = normalizeQuery(name);
+    const activeRequestId = ++requestId.current;
+    setQuery(trimmed);
 
-      if (!trimmed) {
-        setStatus('empty');
-        setError('Digite uma cidade ou CEP.');
-        setCities([]);
-        setData(null);
-        setLastAction(null);
+    if (!trimmed) {
+      setStatus('empty');
+      setError('Digite uma cidade ou CEP.');
+      setCities([]);
+      setData(null);
+      setLastAction(null);
+      return;
+    }
+
+    setStatus('loading');
+    setError(null);
+    setData(null);
+    setCities([]);
+    setLastAction({ type: 'search', query: trimmed });
+
+    try {
+      let results: City[];
+
+      if (isCepQuery(trimmed)) {
+        if (!normalizeCep(trimmed)) {
+          setError('Informe um CEP válido.');
+          setStatus('error');
+          return;
+        }
+
+        const location = await resolveCep(trimmed);
+        if (activeRequestId !== requestId.current) {
+          return;
+        }
+
+        results = await searchCitiesByCep(location);
+      } else {
+        results = await searchCitiesByName(trimmed);
+      }
+
+      if (activeRequestId !== requestId.current) {
         return;
       }
 
-      setStatus('loading');
-      setError(null);
-      setData(null);
-      setCities([]);
-      setLastAction({ type: 'search', query: trimmed });
+      setCities(results);
 
-      try {
-        const results = await searchCities(trimmed);
-        setCities(results);
-
-        if (!results.length) {
-          setStatus('empty');
-          setData(null);
-          return;
-        }
-
-        if (results.length === 1) {
-          await selectCity(results[0]);
-          return;
-        }
-
-        setStatus('success');
+      if (!results.length) {
+        setStatus('empty');
         setData(null);
-      } catch (caughtError) {
-        const message =
-          caughtError instanceof WeatherServiceError
+        return;
+      }
+
+      setStatus('success');
+      setData(null);
+    } catch (caughtError) {
+      if (activeRequestId !== requestId.current) {
+        return;
+      }
+
+      if (caughtError instanceof ViaCepServiceError && caughtError.code === 'not-found') {
+        setStatus('empty');
+        setError(null);
+        setCities([]);
+        setData(null);
+        return;
+      }
+
+      const message =
+        caughtError instanceof ViaCepServiceError || caughtError instanceof GeocodingServiceError
+          ? caughtError.message
+          : caughtError instanceof WeatherServiceError
             ? caughtError.message
             : 'Não foi possível concluir a busca.';
-        setError(message);
-        setStatus('error');
-      }
-    },
-    [selectCity],
-  );
+      setError(message);
+      setStatus('error');
+    }
+  }, []);
 
   const retry = useCallback(async () => {
     if (!lastAction) {
